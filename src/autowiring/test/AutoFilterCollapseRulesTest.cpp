@@ -234,3 +234,19 @@ TEST_F(AutoFilterCollapseRulesTest, UnsatisfiableDecoration) {
   // Ensure the correct decoration was invoked
   ASSERT_TRUE(bInvoked) << "AutoFilter was not invoked in an unsatisfiable case as expected";
 }
+
+class AcceptsRValueReference {
+public:
+  // This AutoFilter sinks the decoration here, removes it from the packet
+  void AutoFilter(Decoration<0>&& rvalue) {
+  }
+};
+
+TEST_F(AutoFilterCollapseRulesTest, RValueTest) {
+  AutoRequired<AcceptsRValueReference> arvref;
+  AutoRequired<AutoPacketFactory> factory;
+  auto packet = factory->NewPacket();
+
+  packet->Decorate(Decoration<0>());
+  ASSERT_TRUE(!packet->Has<Decoration<0>>()) << "Packet a decoration that it should not have";
+}
