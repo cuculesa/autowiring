@@ -15,15 +15,15 @@ struct AutoParam{};
 /// AutoParameter uses AutoConfig under the hood and will use "AutoParam" as
 /// its namespace
 /// </summary>
-template<class T, class TKey>
-class AutoParameter:
-  public AutoConfig<T, AutoParam, TKey>
+template<class T, class TNamespace, class TKey>
+class AutoParameterBase:
+  public AutoConfig<T, TNamespace, TKey>
 {
 public:
   static_assert(std::is_constructible<TKey>::value, "Cannot use the default keys provided. You must subclass and use your own");
   
-  AutoParameter() :
-    AutoConfig<T, AutoParam, TKey>(),
+  AutoParameterBase() :
+    AutoConfig<T, TNamespace, TKey>(),
     m_default(TKey::Default())
   {
     if (!isValid(m_default)) {
@@ -34,13 +34,13 @@ public:
   const T& operator*() const {
     return
       this->IsConfigured() ?
-      AutoConfig<T, AutoParam, TKey>::operator*() :
+      AutoConfig<T, TNamespace, TKey>::operator*() :
       m_default;
   }
   
   const T* operator->(void) const {
     return this->IsConfigured() ?
-      this->template AutoConfig<T, AutoParam, TKey>::operator->() :
+      this->template AutoConfig<T, TNamespace, TKey>::operator->() :
       &m_default;
   }
   
@@ -60,6 +60,9 @@ protected:
     return CallValidate<T, TKey>::Call(value);
   }
 };
+
+template<class T, class TKey>
+class AutoParameter : public AutoParameterBase<T, AutoParam, TKey> {};
 
 /// \internal
 /// <summary>
