@@ -42,7 +42,18 @@ class AutoConfig:
 public:
   static_assert(sizeof...(TKey)==1 || sizeof...(TKey)==2, "Must provide a key and optional namespace");
   
-  AutoConfig(void) :
+  template<typename ...t_Args>
+  AutoConfig(t_Args&&... args) :
+    AutoConfigBase(typeid(ConfigTypeExtractor<TKey...>))
+  {
+    // Register with config registry
+    (void)RegConfig<T, TKey...>::r;
+
+    m_manager->Set(m_key, T(std::forward<t_Args>(args)...));
+  }
+
+  template<>
+  AutoConfig() :
     AutoConfigBase(typeid(ConfigTypeExtractor<TKey...>))
   {
     // Register with config registry
@@ -59,6 +70,10 @@ public:
 
   const T* operator->(void) const {
     return m_manager->Get(m_key)->template as<T>().get();
+  }
+
+  void operator=(const T& newValue) {
+    return m_manager->Set(m_key, newValue);
   }
 
   /// <returns>
