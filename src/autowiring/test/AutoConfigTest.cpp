@@ -259,10 +259,51 @@ TEST_F(AutoConfigTest, Validators) {
 
 TEST_F(AutoConfigTest, DirectAssignemnt) {
   AutoConfig<int, struct Namespace1, struct XYZ> var;
-  AutoRequired<MyConfigurableClass> containsVar;
-
   var = 10;
   ASSERT_EQ(10, *var);
+
+  AutoRequired<MyConfigurableClass> containsVar;
+
+  ASSERT_EQ(10, *var);
   ASSERT_EQ(10, *containsVar->m_myName);
+}
+
+struct ComplexValue {
+  int a;
+  int b;
+  int c;
+};
+
+struct MyComplexValueClass {
+  AutoConfig<ComplexValue, struct Namespace1, struct MyCxValue> m_cfg;
+  AutoConfig<ComplexValue, struct Namespace1, struct MyCxValue2> m_cfg2 = ComplexValue{ 10, 15, 30 };
+
+  MyComplexValueClass() : m_cfg(ComplexValue{ 2, 20, 20 }) {}
+};
+
+TEST_F(AutoConfigTest, ValueHandle){
   
+  MyComplexValueClass cfg;
+  
+  ASSERT_EQ(cfg.m_cfg->a, 2);
+  ASSERT_EQ(cfg.m_cfg->b, 20);
+  ASSERT_EQ(cfg.m_cfg->c, 20);
+  ASSERT_EQ(cfg.m_cfg2->a, 10);
+  ASSERT_EQ(cfg.m_cfg2->b, 15);
+  ASSERT_EQ(cfg.m_cfg2->c, 30);
+
+  int callbackCount = 0;
+  cfg.m_cfg += [&callbackCount](const ComplexValue& value) {
+    ++callbackCount;
+    ASSERT_EQ(value.a, 3);
+    ASSERT_EQ(value.b, 20);
+    ASSERT_EQ(value.c, 25);
+  };
+
+  {
+    auto handle = cfg.m_cfg.GetHandle();
+    handle->a = 3;
+    handle->c = 25;
+  }
+  ASSERT_EQ(callbackCount, 1);
 }

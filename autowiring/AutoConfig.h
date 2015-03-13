@@ -2,8 +2,9 @@
 #pragma once
 #include "Autowired.h"
 #include "AutoConfigManager.h"
-#include "ConfigRegistry.h"
+#include "AutoConfigValueHandle.h"
 
+#include "ConfigRegistry.h"
 #include <string>
 #include TYPE_INDEX_HEADER
 
@@ -51,7 +52,7 @@ public:
 
     m_manager->Set(m_key, T(std::forward<t_Args>(args)...));
   }
-
+  
   template<>
   AutoConfig() :
     AutoConfigBase(typeid(ConfigTypeExtractor<TKey...>))
@@ -74,6 +75,10 @@ public:
 
   void operator=(const T& newValue) {
     return m_manager->Set(m_key, newValue);
+  }
+
+  AutoConfigValueHandle<T> GetHandle(void) {
+    return AutoConfigValueHandle<T>(m_manager, m_key);
   }
 
   /// <returns>

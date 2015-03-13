@@ -67,7 +67,7 @@ public:
   /// in the application, or if the specified value type does not match the type expected by this field
   /// </remarks>
   AnySharedPointer& Get(const std::string& key);
-  
+
   /// <summary>
   /// Assigns the specified value to an AnySharedPointer slot
   /// </summary>
@@ -114,4 +114,7 @@ private:
   // Set a value in this manager, call callbacks
   // Must hold m_lock when calling this
   void SetInternal(const std::string& key, const AnySharedPointer& value);
+
+  void RunCallbacks(const std::string& string, const AnySharedPointer& value);
+
 };
