@@ -33,6 +33,14 @@ TEST_F(AutoConfigTest, VerifySimpleAssignment) {
   ASSERT_EQ(323, *mcc->m_myName) << "Configurable type did not receive a value as expected";
 }
 
+TEST_F(AutoConfigTest, VerifyNestedNamespace) {
+  AutoRequired<AutoConfigManager> acm;
+  acm->Set("NamespaceRoot.NamespaceChild.XYZ", 142);
+
+  AutoConfig<int, struct NamespaceRoot, struct NamespaceChild, struct XYZ> cfg;
+  ASSERT_EQ(142, *cfg);
+}
+
 struct MyBoolClass {
   AutoConfig<bool, struct bool_space, struct my_bool> m_bool;
 };
