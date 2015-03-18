@@ -50,7 +50,9 @@ public:
     // Register with config registry
     (void)RegConfig<T, TKey...>::r;
 
-    m_manager->Set(m_key, T(std::forward<t_Args>(args)...));
+    if (!IsConfigured()){
+      m_manager->Set(m_key, T(std::forward<t_Args>(args)...));
+    }
   }
   
   template<>
