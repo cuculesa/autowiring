@@ -43,6 +43,7 @@ AutoConfigManager::AutoConfigManager(void){
     if (mgmt) {
       std::lock_guard<std::mutex> lk(mgmt->m_lock);
       m_values = mgmt->m_values;
+      m_orderedKeys = mgmt->m_orderedKeys;
     }
   }
 }
@@ -105,6 +106,17 @@ void AutoConfigManager::AddCallback(const std::string& key, t_callback&& fx) {
   m_callbacks[key].push_back(fx);
 }
 
+void AutoConfigManager::AddCallback(t_add_callback&& fx) {
+  // Grab lock until done setting value
+  std::lock_guard<std::mutex> lk(m_lock);
+
+  for (auto& key : m_orderedKeys) {
+    fx(key, m_values[key]);
+  }
+
+  m_addCallbacks.emplace_back(std::move(fx));
+}
+
 void AutoConfigManager::SetRecursive(const std::string& key, AnySharedPointer value) {
   // Call all validators for this key
   if (s_validators.count(key)) {
@@ -119,7 +131,7 @@ void AutoConfigManager::SetRecursive(const std::string& key, AnySharedPointer va
   
   // Grab lock until done setting value
   std::lock_guard<std::mutex> lk(m_lock);
-  
+
   // Actually set the value in this manager
   SetInternal(key, value);
   
@@ -159,8 +171,14 @@ void AutoConfigManager::SetRecursive(const std::string& key, AnySharedPointer va
 }
 
 void AutoConfigManager::SetInternal(const std::string& key, const AnySharedPointer& value) {
+  if (m_values.count(key) == 0) {
+    m_orderedKeys.push_back(key);
+    for (auto& callback : m_addCallbacks) {
+      callback(key, value);
+    }
+  }
+
   m_values[key] = value;
-  
   // Call callbacks for this key
   for (const auto& cb : m_callbacks[key]) {
     cb(value);
