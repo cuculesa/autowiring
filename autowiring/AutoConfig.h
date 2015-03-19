@@ -55,7 +55,6 @@ public:
     }
   }
   
-  template<>
   AutoConfig() :
     AutoConfigBase(typeid(ConfigTypeExtractor<TKey...>))
   {

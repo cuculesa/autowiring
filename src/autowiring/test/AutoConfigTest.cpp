@@ -10,46 +10,46 @@ class AutoConfigTest:
 
 TEST_F(AutoConfigTest, ExtractKeyTestWin) {
   std::string type1("struct ConfigTypeExtractor<struct Namespace1, struct XYZ>");
-  const auto key1 = autowiring::ExtractKeyWin(type1);
+  const auto key1 = autowiring::ExtractKey(type1);
   ASSERT_EQ("Namespace1.XYZ", key1) << "Failed to properly extract Key with a single namespace";
 
   std::string type2("struct ConfigTypeExtractor<struct Namespace1, struct Namespace2, struct XYZ>");
-  const auto key2 = autowiring::ExtractKeyWin(type2);
+  const auto key2 = autowiring::ExtractKey(type2);
   ASSERT_EQ("Namespace1.Namespace2.XYZ", key2) << "Failed to properly extract Key with multiple namespaces";
 
   std::string type3("struct ConfigTypeExtractor<struct XYZ>");
-  const auto key3 = autowiring::ExtractKeyWin(type3);
+  const auto key3 = autowiring::ExtractKey(type3);
   ASSERT_EQ("XYZ", key3) << "Failed to properly extract Key with no namespace";
 
   std::string type4("struct ConfigTypeExtractor<class ClassNamespace1, class AutoConfigTest, struct XYZ>");
-  const auto key4 = autowiring::ExtractKeyWin(type4);
+  const auto key4 = autowiring::ExtractKey(type4);
   ASSERT_EQ("ClassNamespace1.AutoConfigTest.XYZ", key4) << "Failed to properly extract Key with class namespaces";
 
-  std::string type5("struct ConfigTypeExtractor<struct `private: virtual void __thiscall AutoConfigTest_TypeParser_Test::TestBody(void)'::`2'::Namespace1,struct `private: virtual void __thiscall AutoConfigTest_TypeParser_Test::TestBody(void)'::`2'::Namespace2,struct `private: virtual void __thiscall AutoConfigTest_TypeParser_Test::TestBody(void)'::`2'::XYZ>");
-  const auto key5 = autowiring::ExtractKeyWin(type5);
-  ASSERT_EQ("Namespace1.Namespace2.XYZ", key5) << "Failed to properly extract Key from private structs";
+  std::string type5("struct ConfigTypeExtractor<class ClassNamespace1, class Base::Nested, struct XYZ>");
+  const auto key5 = autowiring::ExtractKey(type5);
+  ASSERT_EQ("ClassNamespace1.Base::Nested.XYZ", key5) << "Failed to properly extract Key from nested";
 }
 
 TEST_F(AutoConfigTest, ExtractKeyTestPOSIX) {
   std::string type1("ConfigTypeExtractor<Namespace1, XYZ>");
-  const auto key1 = autowiring::ExtractKeyUnix(type1);
+  const auto key1 = autowiring::ExtractKey(type1);
   ASSERT_EQ("Namespace1.XYZ", key1) << "Failed to properly extract Key with a single namespace";
 
   std::string type2("ConfigTypeExtractor<Namespace1, Namespace2, XYZ>");
-  const auto key2 = autowiring::ExtractKeyUnix(type2);
+  const auto key2 = autowiring::ExtractKey(type2);
   ASSERT_EQ("Namespace1.Namespace2.XYZ", key2) << "Failed to properly extract Key with multiple namespaces";
 
   std::string type3("ConfigTypeExtractor<XYZ>");
-  const auto key3 = autowiring::ExtractKeyUnix(type3);
+  const auto key3 = autowiring::ExtractKey(type3);
   ASSERT_EQ("XYZ", key3) << "Failed to properly extract Key with no namespace";
 
   std::string type4("ConfigTypeExtractor<ClassNamespace1, AutoConfigTest, XYZ>");
-  const auto key4 = autowiring::ExtractKeyUnix(type4);
+  const auto key4 = autowiring::ExtractKey(type4);
   ASSERT_EQ("ClassNamespace1.AutoConfigTest.XYZ", key4) << "Failed to properly extract Key with class namespaces";
-
-  std::string type5("ConfigTypeExtractor<`private: virtual void __thiscall AutoConfigTest_TypeParser_Test::TestBody(void)'::`2'::Namespace1,`private: virtual void __thiscall AutoConfigTest_TypeParser_Test::TestBody(void)'::`2'::Namespace2,`private: virtual void __thiscall AutoConfigTest_TypeParser_Test::TestBody(void)'::`2'::XYZ>");
-  const auto key5 = autowiring::ExtractKeyUnix(type5);
-  ASSERT_EQ("Namespace1.Namespace2.XYZ", key5) << "Failed to properly extract Key from private structs";
+  
+  std::string type5("ConfigTypeExtractor<ClassNamespace1, Base::Nested, XYZ>");
+  const auto key5 = autowiring::ExtractKey(type5);
+  ASSERT_EQ("ClassNamespace1.Base::Nested.XYZ", key5) << "Failed to properly extract Key from nested";
 }
 
 struct MyConfigurableClass {
@@ -77,12 +77,21 @@ TEST_F(AutoConfigTest, VerifySimpleAssignment) {
   ASSERT_EQ(323, *mcc->m_myName) << "Configurable type did not receive a value as expected";
 }
 
+struct NamespaceRoot;
+struct NamespaceChild;
+
 TEST_F(AutoConfigTest, VerifyNestedNamespace) {
   AutoRequired<AutoConfigManager> acm;
-  acm->Set("NamespaceRoot.NamespaceChild.XYZ", 142);
+  acm->Set("NamespaceRoot.NamespaceChild.Namespace1.Namespace2.XYZ", 142);
 
-  AutoConfig<int, struct NamespaceRoot, struct NamespaceChild, struct XYZ> cfg;
+  AutoConfig<int, struct NamespaceRoot, struct NamespaceChild, struct Namespace1, struct Namespace2, struct XYZ> cfg;
   ASSERT_EQ(142, *cfg);
+}
+
+TEST_F(AutoConfigTest, VerifyThrowOnPrivateStructs) {
+  //  AutoConfig<int, struct BadNamespace, struct XYZ> cfg;
+  ConfigTypeExtractor<struct BadNamespace, struct XYZ> badType;
+  ASSERT_ANY_THROW(autowiring::ExtractKey(typeid(badType))) << "Failed to throw on extracting key from private type";
 }
 
 struct MyBoolClass {
