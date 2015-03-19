@@ -3,11 +3,12 @@
 #include "AutoConfigParser.hpp"
 #include "demangle.h"
 #include "expect.hpp"
-
+#include <sstream>
   
-std::string autowiring::ExtractKeyUnix(std::stringstream& ss) {
+std::string autowiring::ExtractKeyUnix(const std::string& demangled) {
   //Extract Namespace and value from typename
   //ConfigTypeExtractor<Namespace, Value>
+  std::stringstream ss(demangled);
   
   std::string arg1;
   std::string arg2;
@@ -36,15 +37,37 @@ std::string autowiring::ExtractKeyUnix(std::stringstream& ss) {
   }
 }
 
-std::string autowiring::ExtractKeyWin(std::stringstream& ss) {
+std::string autowiring::ExtractKeyWin(const std::string& demangled) {
   //Extract Namespace and value from typename
-  //struct ConfigTypeExtractor<struct Namespace, struct Value>
+  //struct ConfigTypeExtractor<struct Namespace, struct ..., struct Value>
+
+  const auto identifiersStart = demangled.find('<');
+  const auto identifiersEnd = demangled.rfind('>');
+  if (identifiersStart == (std::string::npos) || identifiersEnd == std::string::npos)
+    return std::string();
+
+  std::string key;
   
-  std::string arg1;
-  std::string arg2;
-  ss >> expect("struct") >> expect("ConfigTypeExtractor<struct");
-  ss >> arg1;
-  
+  auto subKeyStart = identifiersStart + 1;
+  auto subKeyEnd = subKeyStart;
+
+  while (subKeyStart < identifiersEnd) {
+    //Find the > or , which denotes the start of the next identifier (or the end of the identifiers)
+    subKeyEnd = demangled.find_first_of(",>", subKeyStart);
+
+    //Find the end of :: or the space between the struct declaration and our name backwards from the end of the identifer
+    subKeyStart = demangled.find_last_of(": ", subKeyEnd);
+
+    key += demangled.substr(subKeyStart + 1, (subKeyEnd-subKeyStart)-1);
+    key += ".";
+
+    subKeyStart = subKeyEnd + 1;
+  }
+
+  key.resize(key.size() - 1); //trim the trailing .
+  return key;
+
+  /*
   // If arg1 contains a comma, there are 2 arguments
   auto found = arg1.find(",struct");
   if (found != std::string::npos) {
@@ -64,17 +87,16 @@ std::string autowiring::ExtractKeyWin(std::stringstream& ss) {
     // Remove trailing '>'
     arg1.resize(arg1.size()-1);
     return arg1;
-  }
+  }*/
 }
 
 std::string autowiring::ExtractKey(const std::type_info& ti) {
   std::string demangled = demangle(ti);
-  std::stringstream ss(demangled);
 
   return
 #if __GNUG__// Mac and linux
-  ExtractKeyUnix(ss);
+  ExtractKeyUnix(demangled);
 #else // Windows
-  ExtractKeyWin(ss);
+  ExtractKeyWin(demangled);
 #endif
 }
