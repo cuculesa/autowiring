@@ -54,7 +54,10 @@ public:
       m_manager->Set(m_key, T(std::forward<t_Args>(args)...));
     }
   }
-  
+
+#if _WIN32 //Silence warnings about multiple default constructors on windows
+  template<>
+#endif
   AutoConfig() :
     AutoConfigBase(typeid(ConfigTypeExtractor<TKey...>))
   {
