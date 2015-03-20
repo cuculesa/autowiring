@@ -115,11 +115,11 @@ public:
   // Add a callback for when key is changed in this context
   void AddCallback(const std::string& key, t_callback&& fx);
 
-  // Add a callback for when a key is added in this context.  Is immediately called on all
+  // Add a callback for when a key is set in this context.  Is immediately called on all
   // currently existing values in the order they were created
   void AddCallback(t_add_callback&& fx);
 
-  // Returns a list of all configured keys
+  // Returns a list of all keys which have been set from this context
   const std::vector<std::string>& GetConfiguredKeys() const { return m_orderedKeys; }
 
 private:

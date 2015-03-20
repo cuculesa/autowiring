@@ -400,16 +400,16 @@ TEST_F(AutoConfigTest, ListingConfigs) {
   var1_outer->m_myName = 2;
 
   ASSERT_EQ(1, acm_outer->GetConfiguredKeys().size()) << "Incorrect number of keys found in outer context";
-  ASSERT_EQ(2, acm_inner->GetConfiguredKeys().size()) << "Incorrect number of keys found in inner context";
+  ASSERT_EQ(1, acm_inner->GetConfiguredKeys().size()) << "Incorrect number of keys found in inner context";
 
   AutoRequired<MyConfigurableClass> var2_outer(ctxt_outer);
   var2_outer->m_myName = 3;
 
   ASSERT_EQ(2, acm_outer->GetConfiguredKeys().size()) << "Incorrect number of keys found in outer context";
-  ASSERT_EQ(2, acm_inner->GetConfiguredKeys().size()) << "Incorrect number of keys found in inner context";
+  ASSERT_EQ(1, acm_inner->GetConfiguredKeys().size()) << "Incorrect number of keys found in inner context";
 
   ASSERT_EQ(2, callback_outer) << "Outer callback called an incorrect number of times";
-  ASSERT_EQ(2, callback_inner) << "Inner callback called an incorrect number of times";
+  ASSERT_EQ(1, callback_inner) << "Inner callback called an incorrect number of times";
 
   auto keys_outer = acm_outer->GetConfiguredKeys();
   ASSERT_EQ(var1_outer->m_myName.m_key, keys_outer[0]) << "Keys listed out of construction order";
@@ -417,5 +417,4 @@ TEST_F(AutoConfigTest, ListingConfigs) {
 
   auto keys_inner = acm_inner->GetConfiguredKeys();
   ASSERT_EQ(var1_inner->m_myName.m_key, keys_inner[0]) << "Keys listed out of construction order";
-  ASSERT_EQ(var1_outer->m_myName.m_key, keys_inner[1]) << "Keys listed out of construction order";
 }

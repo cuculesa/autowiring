@@ -43,7 +43,6 @@ AutoConfigManager::AutoConfigManager(void){
     if (mgmt) {
       std::lock_guard<std::mutex> lk(mgmt->m_lock);
       m_values = mgmt->m_values;
-      m_orderedKeys = mgmt->m_orderedKeys;
     }
   }
 }
@@ -136,7 +135,13 @@ void AutoConfigManager::SetRecursive(const std::string& key, AnySharedPointer va
   SetInternal(key, value);
   
   // Mark key set from this manager
-  m_setHere.insert(key);
+  auto inserted = m_setHere.insert(key);
+  if (inserted.second) {
+    m_orderedKeys.push_back(key);
+    for (auto& callback : m_addCallbacks) {
+      callback(key, value);
+    }
+  }
   
   // Enumerate descendant contexts
   auto enumerator = ContextEnumerator(GetContext());
@@ -170,12 +175,7 @@ void AutoConfigManager::SetRecursive(const std::string& key, AnySharedPointer va
 }
 
 void AutoConfigManager::SetInternal(const std::string& key, const AnySharedPointer& value) {
-  if (m_values.count(key) == 0) {
-    m_orderedKeys.push_back(key);
-    for (auto& callback : m_addCallbacks) {
-      callback(key, value);
-    }
-  }
+
 
   m_values[key] = value;
   // Call callbacks for this key
