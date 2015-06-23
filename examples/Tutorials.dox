@@ -4,6 +4,10 @@
 
 Here are sequences of annotated, compiling programs which are designed to teach the concepts of Autowiring in an incremental way.
 
+### Contexts
+
+- @subpage ContextTutorial_0_0
+
 ### AutoFilter
 
 - @subpage AutoFilterTutorial_0_0

@@ -720,7 +720,8 @@ FILE_PATTERNS          = "at_exit.h" \
                          *.md \
                          *.dox \
                          AutoFilterTutorial.0.0.cpp \
-                         AutoFilterTutorial.1.0.cpp
+                         AutoFilterTutorial.1.0.cpp \
+                         ContextTutorial.0.0.cpp
 
 # The RECURSIVE tag can be used to turn specify whether or not subdirectories 
 # should be searched for input files as well. Possible values are YES and NO. 
@@ -1519,7 +1520,7 @@ PERLMOD_MAKEVAR_PREFIX =
 # evaluate all C-preprocessor directives found in the sources and include 
 # files.
 
-ENABLE_PREPROCESSING   = YES
+ENABLE_PREPROCESSING   = NO
 
 # If the MACRO_EXPANSION tag is set to YES Doxygen will expand all macro 
 # names in the source code. If set to NO (the default) only conditional 
