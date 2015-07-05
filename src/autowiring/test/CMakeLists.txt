@@ -38,9 +38,10 @@ set(AutowiringTest_SRCS
   DispatchQueueTest.cpp
   DtorCorrectnessTest.hpp
   DtorCorrectnessTest.cpp
-  ExceptionFilterTest.cpp
   EventReceiverTest.cpp
   EventRegistryTest.cpp
+  ExceptionFilterTest.cpp
+  ExpressPacketTest.cpp
   FactoryTest.cpp
   GlobalInitTest.hpp
   GlobalInitTest.cpp

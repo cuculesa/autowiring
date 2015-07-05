@@ -110,6 +110,10 @@ set(Autowiring_SRCS
   EventRegistry.h
   ExceptionFilter.cpp
   ExceptionFilter.h
+  ExpressPacket.h
+  ExpressPacket.cpp
+  ExpressPacketFactory.h
+  ExpressPacketFactory.cpp
   fast_pointer_cast.h
   GlobalCoreContext.cpp
   GlobalCoreContext.h
