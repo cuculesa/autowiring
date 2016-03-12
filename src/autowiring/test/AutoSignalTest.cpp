@@ -1,6 +1,6 @@
 // Copyright (C) 2012-2015 Leap Motion, Inc. All rights reserved.
 #include "stdafx.h"
-#include <autowiring/autowiring.h>
+#include <autowiring/signal.h>
 #include <thread>
 
 using namespace autowiring;
@@ -725,4 +725,23 @@ TEST_F(AutoSignalTest, IsExecuting) {
     }
   };
   ASSERT_FALSE(sig.is_executing()) << "Signal was incorrectly marked as executing even though nothing is happening";
+}
+
+TEST_F(AutoSignalTest, Wait) {
+  autowiring::signal<void()> sig;
+  autowiring::spin_lock spin;
+  spin.lock();
+  auto proceed = std::make_shared<bool>(true);
+
+  std::thread t([&, proceed] {
+    std::lock_guard<autowiring::spin_lock>{spin};
+
+    std::mutex lk;
+    std::condition_variable cv;
+    sig.wait(std::unique_lock<std::mutex>{lk}, cv);
+  });
+  auto x = MakeAtExit([&] {
+    *proceed = false;
+    t.join();
+  });
 }

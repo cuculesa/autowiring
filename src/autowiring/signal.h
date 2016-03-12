@@ -1,5 +1,6 @@
 // Copyright (C) 2012-2015 Leap Motion, Inc. All rights reserved.
 #pragma once
+#include "at_exit.h"
 #include "atomic_list.h"
 #include "auto_tuple.h"
 #include "autowiring_error.h"
@@ -13,6 +14,7 @@
 #include <atomic>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include TYPE_TRAITS_HEADER
 
 /// <summary>
@@ -23,6 +25,15 @@ namespace autowiring {
   struct signal;
 
   namespace detail {
+    template<typename T>
+    struct has_bind {
+      static std::true_type select();
+
+      static std::false_type select(...);
+
+      static const bool value = decltype(select<T>(nullptr))::value;
+    };
+
     // Holds true if type T can be copied safely
     template<typename T>
     struct can_copy {
@@ -175,7 +186,7 @@ namespace autowiring {
       void operator()(const Args&... args) override { fn(registration_t{ &owner, this }, args...); }
     };
 
-    void LinkUnsafe(entry_base& e) {
+    void LinkUnsafe(entry_base& e) throw() {
       // Standard, boring linked list insertion:
       e.pBlink = m_pLastListener;
       if (m_pLastListener)
@@ -185,6 +196,7 @@ namespace autowiring {
       m_pLastListener = &e;
     }
 
+    // Deferred strategy for performing a user-requested linkage step
     struct callable_link :
       callable_base
     {
@@ -246,7 +258,7 @@ namespace autowiring {
       m_state = SignalState::Free;
     }
 
-    void UnlinkUnsafe(const entry_base& entry) {
+    void UnlinkUnsafe(const entry_base& entry) throw() {
       if (m_pFirstListener == &entry) {
         m_pFirstListener = m_pFirstListener->pFlink;
         if (m_pFirstListener)
@@ -483,6 +495,54 @@ namespace autowiring {
           catch (...) {}
         }
       }
+    }
+
+    struct signal_waiter {
+      signal_waiter(std::unique_lock<std::mutex>& lk, std::condition_variable& cv) :
+        lk(lk),
+        cv(cv)
+      {}
+
+      bool hit = false;
+      std::unique_lock<std::mutex>& lk;
+      std::condition_variable& cv;
+      registration_t cl;
+
+      void operator()(const Args&...) {
+        // Trivial return check.  If we don't have this check we can actually crash because
+        // it is possible that the unique lock and/or condition variable are both invalid by
+        // this point.
+        if (hit)
+          return;
+
+        // Unregistration must UNCONDITIONALLY happen here.  If we allow the blocking thread
+        // to perform the unregistration instead, a possibility for a multihit on this handler
+        // exists.
+        *this -= cl;
+
+        // Toggle the lock and then signal:
+        lk.lock();
+        hit = true;
+        lk.unlock();
+        cv.notify_all();
+      }
+    };
+
+    /// <summary>
+    /// Waits for the signal to be signalled by using the specified condition_variable
+    /// </summary>
+    /// <param name="lk">A held lock used in conjunction with the condition variable</param>
+    /// <param name="cv">A condition variable that will be used during the wait</param>
+    void wait(std::unique_lock<std::mutex>& lk, std::condition_variable& cv) {
+      bool hit = false;
+      registration_t cl;
+
+      // Need to capture the registration object
+      cl = *this += signal_waiter{ lk, cv };
+
+      // Recursive assignment of signal entry necessary:
+
+      cv.wait(lk, [&] { return hit; });
     }
 
     // This overload is provided so that statement completion makes sense.  Because of the
