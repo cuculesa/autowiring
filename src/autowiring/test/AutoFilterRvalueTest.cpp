@@ -161,3 +161,13 @@ TEST_F(AutoFilterRvalueTest, RecipientRemovalTest) {
 
   ASSERT_FALSE(*called) << "A recipient that should have been removed was called";
 }
+
+TEST_F(AutoFilterRvalueTest, SharedPointerRemoval) {
+  AutoRequired<AutoPacketFactory> factory;
+
+  auto called = std::make_shared<bool>(false);
+  *factory += [called] (std::shared_ptr<Decoration<0>>&& sp) {
+    sp.reset();
+    *called = true;
+  };
+}
